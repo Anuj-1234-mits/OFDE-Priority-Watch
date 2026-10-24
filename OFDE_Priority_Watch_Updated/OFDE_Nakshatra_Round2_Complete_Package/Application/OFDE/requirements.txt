@@ -1,0 +1,5 @@
+# Runtime dependencies (pinned). Versions below could NOT be installed/verified in the build sandbox (no network).
+# If a pin is unavailable on your index, run `pip index versions <pkg>` and update the pin, then re-run the tests.
+sgp4==2.23
+fastapi==0.115.0
+uvicorn==0.30.6

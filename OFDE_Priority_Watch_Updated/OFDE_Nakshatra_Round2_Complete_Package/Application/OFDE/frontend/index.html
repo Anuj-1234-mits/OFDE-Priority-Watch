@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Orbital Future Decision Engine</title>
+<style>
+:root{
+  --space:#03050d; --ink:#060a17; --panel:rgba(13,21,42,.68); --panel2:rgba(24,36,70,.72); --rule:rgba(140,170,255,.17);
+  --text:#e8eeff; --muted:#929fc4; --cyan:#5de3ff; --cyan-d:#2b9bb8; --violet:#9b8cff; --amber:#ffb547; --red:#ff6b7a; --green:#6ee7a8;
+  --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --disp:"Bahnschrift","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;color:var(--text);font:15px/1.55 var(--sans);font-variant-numeric:tabular-nums;min-height:100vh;
+  background:radial-gradient(1100px 650px at 88% -8%,rgba(155,140,255,.22),transparent 62%),radial-gradient(900px 600px at -8% 18%,rgba(93,227,255,.13),transparent 60%),linear-gradient(#03050d,#070c1c 60%,#03050d);background-attachment:fixed}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.app{position:relative;z-index:1}
+a{color:var(--cyan)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.skip{position:absolute;left:-999px;top:0;background:var(--cyan);color:#04202a;padding:8px 12px;z-index:50}.skip:focus{left:8px;top:8px}
+/* top bar */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:10px 26px;background:rgba(4,7,18,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--rule)}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-size:19px;letter-spacing:.04em;font-weight:600}
+.brand small{font:12px var(--sans);letter-spacing:0;color:var(--muted);display:block;margin-top:-3px}
+.topbar nav{display:flex;gap:2px;flex-wrap:wrap}
+.topbar nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:8px 12px;cursor:pointer;transition:color .15s,border-color .15s}
+.topbar nav button:hover{color:var(--text)}
+.topbar nav button[aria-current=page]{color:var(--text);border-bottom-color:var(--cyan)}
+#chips{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+main{max-width:1240px;margin:0 auto;padding:22px 26px 70px;min-width:0}
+h2{font:600 24px var(--disp);margin:0 0 4px;letter-spacing:.01em}
+h3{font:600 16px var(--disp);margin:0 0 8px;letter-spacing:.01em}
+.lede{color:var(--muted);margin:0 0 16px;max-width:72ch}
+.banner{border:1px solid var(--rule);border-left:4px solid var(--cyan);background:var(--panel);backdrop-filter:blur(10px);padding:10px 14px;border-radius:10px;margin:0 0 12px}
+.banner.warn{border-left-color:var(--amber)}.banner.err{border-left-color:var(--red)}.banner.ok{border-left-color:var(--green)}
+.chip{display:inline-block;border:1px solid var(--rule);border-radius:999px;padding:1px 10px;font-size:12.5px;margin:0 6px 4px 0;background:rgba(20,30,60,.7);color:var(--text);white-space:nowrap}
+.chip.synthetic,.chip.illus,.chip.demo{border-color:var(--amber);color:var(--amber)}.chip.real,.chip.good{border-color:var(--green);color:var(--green)}
+.chip.manual{border-color:var(--violet);color:var(--violet)}.chip.bad{border-color:var(--red);color:var(--red)}
+.chip.cyan{border-color:var(--cyan);color:var(--cyan)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--muted)}.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}.dot.off{background:var(--red)}
+/* hero */
+.hero{position:relative;overflow:hidden;border:1px solid var(--rule);border-radius:22px;min-height:540px;margin-bottom:18px;background:#040711;box-shadow:0 20px 70px rgba(0,0,0,.5)}
+.hero svg.scene{position:absolute;inset:0;width:100%;height:100%}
+.hero .copy{position:relative;z-index:2;max-width:640px;padding:54px 40px 40px;background:linear-gradient(90deg,rgba(3,5,13,.82) 0%,rgba(3,5,13,.55) 70%,transparent 100%);min-height:540px;display:flex;flex-direction:column;justify-content:center}
+.hero h1{font:600 clamp(28px,4.6vw,50px)/1.08 var(--disp);margin:0 0 14px;letter-spacing:-.005em}
+.hero h1 span{background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:#b8c4e6;max-width:56ch;margin:0 0 20px}
+.scenecap{position:absolute;right:16px;bottom:10px;z-index:2;font-size:12px;color:#c9a35a;background:rgba(3,5,13,.6);padding:2px 10px;border-radius:999px;border:1px solid rgba(255,181,71,.4)}
+/* layout */
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:15px 17px;min-width:0;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.045)}
+.stat .v{font:600 32px/1.15 var(--disp);color:var(--cyan)}.stat .u{font:15px var(--sans);color:var(--muted);margin-left:5px}
+.stat .l{color:var(--muted);font-size:13.5px}.stat .n{font-size:12.5px;color:var(--muted);margin-top:4px}
+.hero-card{border-color:rgba(93,227,255,.28);box-shadow:0 0 0 1px rgba(93,227,255,.06),0 14px 50px rgba(0,0,0,.4),0 0 60px rgba(93,227,255,.05)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:13px;white-space:nowrap}td.num,th.num{text-align:right}
+.tablewrap{overflow-x:auto}
+tr.click{cursor:pointer;transition:background .12s}tr.click:hover,tr.sel{background:rgba(93,227,255,.07)}
+.btn{background:rgba(26,38,74,.8);border:1px solid var(--rule);border-radius:9px;padding:7px 15px;cursor:pointer;text-decoration:none;color:var(--text);display:inline-block;transition:border-color .15s,box-shadow .15s}
+.btn:hover:not(:disabled){border-color:var(--cyan);box-shadow:0 0 18px rgba(93,227,255,.18)}
+.btn.primary{background:linear-gradient(135deg,#5de3ff,#8aa6ff);color:#04202a;border-color:transparent;font-weight:600}
+.btn.primary:hover:not(:disabled){box-shadow:0 0 26px rgba(93,227,255,.4)}.btn.danger:hover:not(:disabled){border-color:var(--red)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
+input[type=text],input[type=number],select,textarea{background:rgba(4,7,18,.75);border:1px solid var(--rule);border-radius:8px;padding:7px 10px;width:100%}
+textarea{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;min-height:112px;white-space:pre;overflow:auto}
+.field{margin-bottom:10px;min-width:0}.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;white-space:pre-wrap;word-break:break-all}
+.muted{color:var(--muted)}.small{font-size:13px}.err-t{color:var(--red)}.warn-t{color:var(--amber)}.ok-t{color:var(--green)}
+.empty{border:1px dashed var(--rule);border-radius:12px;padding:18px;color:var(--muted);text-align:center}
+.chartbox{position:relative}
+svg.chart{width:100%;height:auto;display:block;background:rgba(5,9,22,.6);border:1px solid var(--rule);border-radius:12px}
+svg text{fill:var(--muted);font:12px var(--sans)}svg .axis{stroke:#44587d;stroke-width:1}svg .grid{stroke:rgba(140,170,255,.1);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:rgba(4,7,18,.94);border:1px solid var(--cyan-d);border-radius:8px;padding:6px 10px;font-size:12.5px;display:none;z-index:5;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 2px 0;font-size:13px;color:var(--muted)}.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+details{margin:6px 0}summary{cursor:pointer;color:var(--cyan)}
+.scen{border:1px solid var(--rule);border-radius:12px;padding:10px;margin-bottom:8px;background:rgba(20,30,60,.5)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.tabs button{background:none;border:1px solid var(--rule);border-radius:8px;padding:4px 12px;color:var(--muted);cursor:pointer;font-size:13px}
+.tabs button[aria-pressed=true]{color:var(--text);border-color:var(--cyan);background:rgba(93,227,255,.08)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--rule);border-top-color:var(--cyan);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}@keyframes sp{to{transform:rotate(360deg)}}
+dl.kv{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;margin:0}dl.kv dt{color:var(--muted)}dl.kv dd{margin:0;min-width:0;word-break:break-word}
+ul.tight{margin:4px 0;padding-left:20px}ul.tight li{margin:3px 0}
+.reveal{animation:rv .5s ease both}@keyframes rv{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.valmsg{font-size:13px;margin-top:4px;min-height:20px}
+@media (max-width:760px){.topbar{padding:8px 14px}#chips{margin-left:0}main{padding:14px}.hero .copy{padding:30px 20px;min-height:480px;background:linear-gradient(180deg,rgba(3,5,13,.78),rgba(3,5,13,.5))}}
+
+/* Priority Watch: priority and restricted-data labels are intentionally separate */
+.pw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:12px;margin:12px 0 18px}
+.pw-alert{background:rgba(13,21,42,.82);border:1px solid var(--rule);border-left:4px solid var(--amber);border-radius:12px;padding:14px;min-width:0}
+.pw-alert.critical{border-left-color:var(--red)}.pw-alert.needs_attention{border-left-color:var(--amber)}.pw-alert.reviewed_resolved{border-left-color:var(--green);opacity:.88}
+.pw-head{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.pw-tag{display:inline-flex;align-items:center;gap:6px;border:1px solid currentColor;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:650}
+.pw-tag.critical{color:var(--red)}.pw-tag.needs_attention{color:var(--amber)}.pw-tag.reviewed_resolved{color:var(--green)}
+.pw-status{color:var(--muted);font-size:12px}.pw-reason{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}.pw-meta{font-size:12px;color:var(--muted);display:flex;gap:6px 14px;flex-wrap:wrap}
+.pw-label{display:inline-block;border:1px dashed var(--violet);color:var(--violet);border-radius:6px;padding:1px 7px;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.pw-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px;align-items:end;margin-top:10px}.pw-form label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.pw-form input,.pw-form select,.pw-form textarea{width:100%;border:1px solid var(--rule);background:rgba(3,5,13,.7);border-radius:8px;padding:9px}.pw-form .wide{grid-column:1/-1}.pw-form textarea{min-height:68px;resize:vertical}
+
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="14" ry="6" fill="none" stroke="#5de3ff" stroke-width="1.6" transform="rotate(-20 16 16)"/><ellipse cx="16" cy="16" rx="14" ry="6" fill="none" stroke="#9b8cff" stroke-width="1.6" transform="rotate(25 16 16)"/><circle cx="16" cy="16" r="3.2" fill="#e8eeff"/></svg><div>OFDE<small>Orbital Future Decision Engine</small></div></div>
+  <nav aria-label="Main navigation">
+    <button data-tab="mission" aria-current="page">Mission</button>
+    <button data-tab="analyze">Analyze</button>
+    <button data-tab="history">History</button>
+    <button data-tab="data">Datasets</button>
+    <button data-tab="method">Method and limits</button>
+  </nav>
+  <div id="chips" aria-label="System status"></div>
+</header>
+<main id="main" tabindex="-1">
+  <div id="statusbar" role="status" aria-live="polite"></div>
+  <div id="page"></div>
+</main>
+</div>
+
+<script>
+"use strict";
+/* ============================ helpers ============================ */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (x, nd=3) => (x === null || x === undefined || Number.isNaN(x)) ? "unavailable" : Number(x).toLocaleString("en-US",{minimumFractionDigits:nd,maximumFractionDigits:nd});
+const fmtU = (x, nd, u) => x == null ? "unavailable" : `${fmt(x,nd)} ${u}`;
+/* API base: same origin when served by the backend (http://127.0.0.1:8000); when index.html is opened from disk, talk to the local backend. */
+const API = location.protocol.startsWith("http") ? "" : "http://127.0.0.1:8000";
+const COLORS = ["#5de3ff","#ffb547","#9b8cff","#6ee7a8","#ff6b7a","#f2ee8d","#7aa7ff","#ff9ed2"];
+const REDUCED = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+const S = { tab:"mission", backend:null, backendErr:null, datasets:[], dsId:null, ds:null, dash:null, an:null, history:[],
+  defs:null, busy:false, msg:null, form:null, view:{zoom:"tca", proj:"xy"}, illustrative:false, objSel:null, fileName:null, priorityWatch:[] };
+
+async function api(path, opts={}) {
+  let res;
+  try { res = await fetch(API + path, {headers:{"Content-Type":"application/json"}, ...opts}); }
+  catch (e) { throw {network:true, message:"Cannot reach the OFDE backend at " + (API || location.origin) + ". Is it running?"}; }
+  const ct = res.headers.get("content-type") || "";
+  const body = ct.includes("json") ? await res.json() : await res.text();
+  if (!res.ok) throw {status:res.status, code: body?.error?.code, message: body?.error?.message || ("HTTP " + res.status)};
+  return body;
+}
+const post = (p, b) => api(p, {method:"POST", body: JSON.stringify(b||{})});
+
+/* static starfield (seeded, drawn once; no animation) */
+function drawStars(){
+  const c = $("#stars"); if (!c) return; const dpr = Math.min(window.devicePixelRatio||1, 2);
+  c.width = innerWidth*dpr; c.height = innerHeight*dpr; const g = c.getContext("2d"); g.scale(dpr,dpr);
+  let a = 20261024; const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1|a); t = t + Math.imul(t ^ t>>>7, 61|t) ^ t; return ((t ^ t>>>14)>>>0)/4294967296; };
+  for (let i=0;i<260;i++){ const x=rnd()*innerWidth, y=rnd()*innerHeight, r=0.3+rnd()*1.0, al=0.2+rnd()*0.65, tint=rnd();
+    g.fillStyle = tint<0.15 ? `rgba(150,230,255,${al})` : tint<0.3 ? `rgba(190,170,255,${al})` : `rgba(255,255,255,${al})`;
+    g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill(); }
+}
+
+/* hero scene: ILLUSTRATIVE. Orbit crossing is found numerically so the marker sits where the drawn arcs actually meet. */
+function heroScene(){
+  const cx=730, cy=322, A={rx:440,ry:140,rot:-10}, B={rx:395,ry:98,rot:13};
+  const pt = (o,t) => { const x=o.rx*Math.cos(t), y=o.ry*Math.sin(t), r=o.rot*Math.PI/180; return [cx+x*Math.cos(r)-y*Math.sin(r), cy+x*Math.sin(r)+y*Math.cos(r)]; };
+  let best = {d:1e9};
+  for (let i=0;i<540;i++){ const ta=i/540*6.2832, pa=pt(A,ta); if (pa[1] > 400 || pa[0] < 820 || pa[0] > 1080) continue;
+    for (let j=0;j<540;j++){ const tb=j/540*6.2832, pb=pt(B,tb), d=Math.hypot(pa[0]-pb[0],pa[1]-pb[1]); if (d<best.d) best={d,ta,tb,pa,pb}; } }
+  const mk = [(best.pa[0]+best.pb[0])/2, (best.pa[1]+best.pb[1])/2];
+  const orbitD = o => `M ${-o.rx} 0 a ${o.rx} ${o.ry} 0 1 0 ${2*o.rx} 0 a ${o.rx} ${o.ry} 0 1 0 ${-2*o.rx} 0`;
+  const sat = (col, panel) => `<g><rect x="-5" y="-3" width="10" height="6" rx="1.5" fill="#e8eeff"/><rect x="-19" y="-2.2" width="12" height="4.4" fill="${panel}" opacity=".9"/><rect x="7" y="-2.2" width="12" height="4.4" fill="${panel}" opacity=".9"/><circle r="9" fill="${col}" opacity=".18"/></g>`;
+  const anim = (o, dur, begin) => REDUCED ? "" : `<animateMotion dur="${dur}s" begin="-${begin}s" repeatCount="indefinite" path="${orbitD(o)}"/>`;
+  const sa = pt(A, best.ta-0.45), sb = pt(B, best.tb+0.45);
+  const satA = REDUCED ? `<g transform="translate(${sa[0]} ${sa[1]})">${sat("#5de3ff","#5de3ff")}</g>` : `<g transform="rotate(${A.rot} ${cx} ${cy}) translate(${cx} ${cy})"><g>${sat("#5de3ff","#5de3ff")}${anim(A,46,9)}</g></g>`;
+  const satB = REDUCED ? `<g transform="translate(${sb[0]} ${sb[1]})">${sat("#9b8cff","#9b8cff")}</g>` : `<g transform="rotate(${B.rot} ${cx} ${cy}) translate(${cx} ${cy})"><g>${sat("#9b8cff","#9b8cff")}${anim(B,61,31)}</g></g>`;
+  return `<svg class="scene" viewBox="0 0 1200 560" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Illustrative scene: two orbits above Earth's limb crossing at a conjunction point">
+  <defs>
+   <radialGradient id="earthG" cx="42%" cy="6%" r="75%"><stop offset="0" stop-color="#16407a"/><stop offset=".35" stop-color="#0a2149"/><stop offset="1" stop-color="#03060f"/></radialGradient>
+   <radialGradient id="limbG" cx="50%" cy="0%" r="50%"><stop offset="0" stop-color="rgba(93,227,255,.55)"/><stop offset="1" stop-color="rgba(93,227,255,0)"/></radialGradient>
+   <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter><filter id="blur14"><feGaussianBlur stdDeviation="14"/></filter>
+  </defs>
+  <ellipse cx="800" cy="438" rx="640" ry="70" fill="url(#limbG)" opacity=".55" filter="url(#blur14)"/>
+  <circle cx="800" cy="1190" r="770" fill="url(#earthG)"/>
+  <circle cx="800" cy="1190" r="771" fill="none" stroke="#5de3ff" stroke-width="14" opacity=".28" filter="url(#blur6)"/>
+  <circle cx="800" cy="1190" r="770" fill="none" stroke="#9fe9ff" stroke-width="2.2" opacity=".85"/>
+  <g transform="rotate(${A.rot} ${cx} ${cy}) translate(${cx} ${cy})"><path d="${orbitD(A)}" fill="none" stroke="#5de3ff" stroke-width="1.4" stroke-dasharray="3 7" opacity=".55"/></g>
+  <g transform="rotate(${B.rot} ${cx} ${cy}) translate(${cx} ${cy})"><path d="${orbitD(B)}" fill="none" stroke="#9b8cff" stroke-width="1.4" stroke-dasharray="3 7" opacity=".6"/></g>
+  <circle cx="${mk[0]}" cy="${mk[1]}" r="16" fill="none" stroke="#ffb547" stroke-width="1.6" opacity=".9"/><circle cx="${mk[0]}" cy="${mk[1]}" r="3" fill="#ffb547"/>
+  <text x="${mk[0]-24}" y="${mk[1]-16}" text-anchor="end" font-size="13" style="fill:#ffb547">closest approach (concept)</text>
+  ${satA}${satB}</svg>`;
+}
+
+/* ============================ charts (inline SVG, offline) ============================ */
+function niceTicks(lo, hi, n=6){
+  if (!(hi > lo)) { hi = lo + 1; }
+  const span = hi - lo, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1,2,2.5,5,10].map(m => m*mag).find(s => s >= raw) || 10*mag;
+  const t = []; for (let v = Math.ceil(lo/step)*step; v <= hi + step*1e-9; v += step) t.push(+v.toPrecision(12));
+  return {ticks:t, step};
+}
+function tickFmt(step){ const d = step >= 1 ? 0 : Math.min(6, Math.ceil(-Math.log10(step))); return v => v.toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+let chartSeq = 0;
+/* cfg: {series:[{name,color,x[],y[],dash,dots}], xlabel, ylabel, markers:[{x,y,label,color}], equal, ymin0, tipX:(x)=>string, h} */
+function lineChart(cfg){
+  const id = "ch" + (++chartSeq), W = 820, H = cfg.h || 340, m = {l:62, r:16, t:14, b:46};
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const xs = [], ys = [];
+  cfg.series.forEach(s => s.x.forEach((v,i) => { if (v != null && s.y[i] != null){ xs.push(v); ys.push(s.y[i]); } }));
+  (cfg.markers||[]).forEach(k => { xs.push(k.x); ys.push(k.y); });
+  if (!xs.length) return `<div class="empty">No data to plot.</div>`;
+  let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  if (cfg.ymin0) y0 = Math.min(0, y0);
+  if (x1 === x0) { x0 -= 1; x1 += 1; } if (y1 === y0) { y0 -= 1; y1 += 1; }
+  if (cfg.equal) {
+    const cx = (x0+x1)/2, cy = (y0+y1)/2; let sx = (x1-x0)/pw, sy = (y1-y0)/ph, s = Math.max(sx, sy)*1.08;
+    x0 = cx - s*pw/2; x1 = cx + s*pw/2; y0 = cy - s*ph/2; y1 = cy + s*ph/2;
+  } else { const pad = (y1-y0)*0.06; y1 += pad; if (!cfg.ymin0) y0 -= pad; }
+  const tx = niceTicks(x0, x1, 7), ty = niceTicks(y0, y1, 6), fx = tickFmt(tx.step), fy = tickFmt(ty.step);
+  const X = v => m.l + (v - x0)/(x1-x0)*pw, Y = v => m.t + ph - (v - y0)/(y1-y0)*ph;
+  let g = "";
+  ty.ticks.forEach(v => { if (v<y0||v>y1) return; g += `<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end">${fy(v)}</text>`; });
+  tx.ticks.forEach(v => { if (v<x0||v>x1) return; g += `<line class="grid" y1="${m.t}" y2="${m.t+ph}" x1="${X(v)}" x2="${X(v)}"/><text x="${X(v)}" y="${m.t+ph+16}" text-anchor="middle">${fx(v)}</text>`; });
+  g += `<line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t+ph}"/><line class="axis" x1="${m.l}" x2="${W-m.r}" y1="${m.t+ph}" y2="${m.t+ph}"/>`;
+  g += `<text x="${m.l+pw/2}" y="${H-8}" text-anchor="middle">${esc(cfg.xlabel)}</text>`;
+  g += `<text transform="translate(14 ${m.t+ph/2}) rotate(-90)" text-anchor="middle">${esc(cfg.ylabel)}</text>`;
+  cfg.series.forEach((s, si) => {
+    const pts = s.x.map((v,i) => [v, s.y[i]]).filter(p => p[0] != null && p[1] != null);
+    if (s.dots) { g += pts.map(p => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" fill="${s.color}"/>`).join(""); }
+    if (s.line !== false) g += `<polyline fill="none" stroke="${s.color}" stroke-width="2" ${s.dash?`stroke-dasharray="${s.dash}"`:""} points="${pts.map(p => X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join(" ")}"/>`;
+  });
+  (cfg.markers||[]).forEach(k => {
+    const px = X(k.x), py = Y(k.y), right = px > W*0.7;
+    g += `<circle cx="${px}" cy="${py}" r="5.5" fill="none" stroke="${k.color||'#fff'}" stroke-width="2"/>`;
+    if (k.label) g += `<text x="${px+(right?-10:10)}" y="${py-10}" text-anchor="${right?'end':'start'}" style="fill:${k.color||'#fff'}">${esc(k.label)}</text>`;
+  });
+  g += `<line id="${id}-cur" y1="${m.t}" y2="${m.t+ph}" stroke="#7a8faa" stroke-dasharray="3 3" style="display:none"/>`;
+  g += `<rect id="${id}-hit" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="transparent"/>`;
+  const legend = cfg.series.filter(s => s.name).map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("");
+  setTimeout(() => wireTip(id, cfg, {X, Y, x0, x1, m, pw, W}), 0);
+  return `<div class="chartbox"><svg id="${id}" class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(cfg.aria||cfg.ylabel+' versus '+cfg.xlabel)}">${g}</svg><div class="tip" id="${id}-tip"></div></div><div class="legend">${legend}</div>`;
+}
+function wireTip(id, cfg, c){
+  const svg = document.getElementById(id), hit = document.getElementById(id+"-hit"), tip = document.getElementById(id+"-tip"), cur = document.getElementById(id+"-cur");
+  if (!hit) return;
+  hit.addEventListener("mousemove", ev => {
+    const r = svg.getBoundingClientRect(), vx = (ev.clientX - r.left)/r.width*c.W, xv = c.x0 + (vx - c.m.l)/c.pw*(c.x1-c.x0);
+    const rows = []; let bestX = null;
+    cfg.series.forEach(s => {
+      let bi = -1, bd = Infinity; s.x.forEach((v,i) => { if (v!=null && s.y[i]!=null){ const d = Math.abs(v-xv); if (d<bd){bd=d;bi=i;} } });
+      if (bi>=0){ rows.push(`<div><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${s.color};margin-right:6px"></i>${esc(s.name||"")} ${esc(cfg.yfmt? cfg.yfmt(s.y[bi]) : fmt(s.y[bi],3))}</div>`); if (bestX===null) bestX = s.x[bi]; }
+    });
+    if (bestX===null) return;
+    cur.setAttribute("x1", c.X(bestX)); cur.setAttribute("x2", c.X(bestX)); cur.style.display = "";
+    tip.innerHTML = `<div class="muted">${esc(cfg.tipX ? cfg.tipX(bestX) : cfg.xlabel+": "+fmt(bestX,3))}</div>` + rows.join("");
+    tip.style.display = "block";
+    const px = (c.X(bestX)/c.W)*r.width; tip.style.left = Math.min(px + 12, r.width - 190) + "px"; tip.style.top = "12px";
+  });
+  hit.addEventListener("mouseleave", () => { tip.style.display = "none"; cur.style.display = "none"; });
+}
+function barChart(items, ylabel, unit){
+  if (!items.length) return `<div class="empty">No data to plot.</div>`;
+  const W = 820, H = 300, m = {l:62, r:16, t:16, b:70}, pw = W-m.l-m.r, ph = H-m.t-m.b;
+  const max = Math.max(...items.map(i => i.v), 1e-9), ty = niceTicks(0, max*1.1, 5), fy = tickFmt(ty.step), ymax = ty.ticks[ty.ticks.length-1];
+  const Y = v => m.t + ph - v/ymax*ph, bw = Math.min(70, pw/items.length*0.6);
+  let g = ty.ticks.map(v => `<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end">${fy(v)}</text>`).join("");
+  g += `<line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t+ph}"/><line class="axis" x1="${m.l}" x2="${W-m.r}" y1="${m.t+ph}" y2="${m.t+ph}"/>`;
+  items.forEach((it, i) => {
+    const cx = m.l + pw*(i+0.5)/items.length;
+    g += `<rect x="${cx-bw/2}" y="${Y(it.v)}" width="${bw}" height="${m.t+ph-Y(it.v)}" fill="${it.color||COLORS[i%COLORS.length]}" rx="2"><title>${esc(it.label)}: ${fmt(it.v,3)} ${unit}</title></rect>`;
+    g += `<text x="${cx}" y="${Y(it.v)-5}" text-anchor="middle" style="fill:#dce6f2">${fmt(it.v,2)}</text>`;
+    const lab = it.label.length > 16 ? it.label.slice(0,15)+"…" : it.label;
+    g += `<text x="${cx}" y="${m.t+ph+16}" text-anchor="middle">${esc(lab)}</text>`;
+  });
+  g += `<text transform="translate(14 ${m.t+ph/2}) rotate(-90)" text-anchor="middle">${esc(ylabel)}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ylabel)} by scenario">${g}</svg>`;
+}
+
+/* ============================ status / banners ============================ */
+const originChip = o => `<span class="chip ${esc(o)}">${o === "synthetic" ? "DEMO (synthetic)" : o === "real" ? "REAL data" : "MANUAL input"}</span>`;
+const msgBox = () => S.msg ? `<div class="banner ${S.msg.kind==='err'?'err':'ok'}" id="msgbox" role="alert">${S.msg.kind==='err'?'<b>Error.</b> ':''}${esc(S.msg.text)}${S.msg.code?` <span class="muted small">(${esc(S.msg.code)})</span>`:''}</div>` : "";
+function renderStatus(){
+  const d = S.dash, chips = [];
+  chips.push(S.backend ? `<span class="chip good"><span class="dot on"></span>Backend connected</span>` : `<span class="chip bad"><span class="dot off"></span>Backend offline</span>`);
+  if (S.backend) { const sg = S.backend.sgp4;
+    chips.push(!sg.available ? `<span class="chip bad">SGP4 unavailable</span>` : sg.verification.verified ? `<span class="chip good">SGP4 ${esc(sg.version)} verified</span>` : `<span class="chip illus">SGP4 ${esc(sg.version)} unverified</span>`);
+    if (d && d.mode_origin) chips.push(d.mode_origin === "synthetic" ? `<span class="chip demo">DEMO data</span>` : d.mode_origin === "real" ? `<span class="chip real">REAL data</span>` : `<span class="chip manual">MANUAL data</span>`); }
+  else chips.push(`<span class="chip illus">DEMO / illustrative only</span>`);
+  $("#chips").innerHTML = chips.join("");
+  let h = "";
+  if (!S.backend) {
+    h += `<div class="banner err"><b>Backend not reachable.</b> ${esc(S.backendErr || "")} Real calculations need the local backend. From the project folder run:
+      <div class="mono">.\\start_ofde.ps1        (or: python -m ofde)</div>
+      Until then only the clearly labelled illustrative example is available; no result is computed. <button class="btn" id="retry">Retry connection</button></div>`;
+  } else {
+    const sg = S.backend.sgp4;
+    if (!sg.available) h += `<div class="banner err"><b>Propagation unavailable.</b> The sgp4 package is not installed, so no orbital analysis can be computed (nothing is substituted). Run <span class="mono">pip install -r requirements.txt</span>, restart, then <span class="mono">python tools\\verify_sgp4.py</span>.</div>`;
+    else if (!sg.verification.verified) h += `<div class="banner warn"><b>SGP4 present (v${esc(sg.version)}) but not yet verified on this machine.</b> Results are labelled unverified. Run <span class="mono">python tools\\verify_sgp4.py</span>. <span class="muted small">${esc(sg.verification.reason||"")}</span></div>`;
+  }
+  if (d && d.demo_mode) h += `<div class="banner warn"><b>DEMO: synthetic data in use.</b> The objects are fictitious. Nothing shown describes a real satellite or debris event.</div>`;
+  $("#statusbar").innerHTML = h;
+  const r = $("#retry"); if (r) r.onclick = init;
+}
+
+/* ============================ data loading ============================ */
+async function init(){
+  S.backend = null; S.backendErr = null;
+  try { S.backend = await api("/api/status"); } catch(e) { S.backendErr = e.message; }
+  if (S.backend) {
+    try { S.defs = await api("/api/metrics/definitions"); } catch(e) {}
+    try { await refreshDatasets(true); await refreshDash(); } catch(e) { S.msg = {kind:"err", text:e.message}; }
+  }
+  render();
+}
+async function refreshDatasets(pickLatest){
+  const r = await api("/api/datasets"); S.datasets = r.datasets;
+  if (!S.datasets.length) { S.dsId = null; S.ds = null; S.dash = null; S.an = null; return; }
+  if (pickLatest || !S.datasets.find(d => d.id === S.dsId)) S.dsId = S.datasets[S.datasets.length-1].id;
+  S.ds = await api("/api/datasets/" + S.dsId);
+  await refreshDash();
+}
+async function refreshDash(){
+  S.dash = await api("/api/dashboard?" + (S.dsId != null ? "dataset_id=" + S.dsId : "") + (S.an ? "&analysis_id=" + S.an.id : ""));
+}
+async function loadHistory(){
+  const [history, watch] = await Promise.all([api("/api/analyses"), api("/api/priority-watch")]);
+  S.history = history.analyses; S.priorityWatch = watch.alerts || [];
+}
+function guard(fn){ return async (...a) => { try { S.msg = null; await fn(...a); } catch(e){ S.msg = {kind:"err", text:e.message || String(e), code:e.code}; } render(); }; }
+
+/* ============================ router ============================ */
+function render(){
+  document.querySelectorAll(".topbar nav button[data-tab]").forEach(b => b.setAttribute("aria-current", b.dataset.tab === S.tab ? "page" : "false"));
+  renderStatus();
+  const pages = {mission:pMission, analyze:pAnalysis, history:pHistory, data:pData, method:pMethod};
+  const wires = {mission:wMission, analyze:wAnalysis, history:wHistory, data:wData, method:()=>{}};
+  $("#page").innerHTML = pages[S.tab]();
+  wires[S.tab]();
+  const mb = $("#msgbox"); if (mb) mb.scrollIntoView({block:"nearest"});
+}
+
+/* ---------- Mission ---------- */
+function pMission(){
+  const d = S.dash, ca = d?.closest_approach, q = d?.data_quality;
+  const hero = `<section class="hero reveal" aria-label="OFDE introduction">${heroScene()}
+    <div class="copy"><h1>From one predicted future to a <span>comparison of plausible outcomes</span></h1>
+      <p>OFDE computes the closest approach between two orbiting objects from TLE data using SGP4, then shows how that result shifts when inputs and assumptions change. A research and education decision-support prototype; not for operational collision avoidance.</p>
+      <div class="row"><button class="btn primary" id="goanalyze">Analyze two TLEs</button><button class="btn" id="demo">${S.backend ? "Load synthetic demo pair" : "Backend offline"}</button></div>
+      <div style="margin-top:14px"><span class="chip cyan">Real SGP4 propagation</span><span class="chip">Scenario comparison</span><span class="chip">Sensitivity sweeps</span><span class="chip illus">No collision probability</span></div></div>
+    <div class="scenecap">Illustrative scene. Not generated from computed data.</div></section>`;
+  if (!S.backend) return `${hero}${msgBox()}<div class="empty">No backend connection, so there is no application state to summarise.</div>`;
+  return `${hero}${msgBox()}
+  <div class="grid g4">
+    <div class="card stat"><div class="l">Scenarios analysed (all stored analyses)</div><div class="v">${d?d.total_scenarios:0}</div><div class="n">${d?d.total_analyses:0} analyses saved in SQLite</div></div>
+    <div class="card stat"><div class="l">Conjunction cases in active dataset</div><div class="v">${d?d.cases_in_dataset:0}</div><div class="n">${d?d.objects_in_dataset:0} objects in “${esc(d?.active_dataset?.name||"none")}”</div></div>
+    <div class="card stat hero-card"><div class="l">Closest computed approach (latest analysis)</div>
+      ${ca ? `<div class="v">${fmt(ca.miss_distance_km,3)}<span class="u">km</span></div><div class="n"><span class="chip good">COMPUTED</span> ${esc(ca.object_a)} and ${esc(ca.object_b)}, ${esc(ca.scenario)}<br>TCA ${esc(ca.tca_utc)}${ca.bracketed?"":"<br><span class='warn-t'>at the window edge; not bracketed</span>"}</div>` : `<div class="v muted">none yet</div><div class="n">Run an analysis to compute one.</div>`}</div>
+    <div class="card stat"><div class="l">Data quality of active dataset</div>
+      ${q ? `<div style="margin:6px 0">${originChip(q.origin)}<span class="chip ${q.outcome==='accepted'?'good':'bad'}">${esc(q.outcome.replace(/_/g,' '))}</span></div><div class="n">${q.accepted} accepted, ${q.rejected} rejected, ${q.warnings} warnings; ${q.object_types_unknown} object types unknown</div>` : `<div class="v muted">n/a</div><div class="n">No dataset yet.</div>`}</div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Scenario comparison summary</h3>
+      ${d?.scenario_summary ? barChart(d.scenario_summary.map((s,i)=>({label:s.name, v:s.miss_distance_km, color:COLORS[i%COLORS.length]})), "Miss distance (km)", "km") + `<p class="small muted">Computed miss distance for each scenario in analysis #${d.selected_analysis_id}.</p>` : `<div class="empty">No analysis yet. Open Analyze, enter two TLEs and run.</div>`}</div>
+    <div class="card"><h3>What is real, and what is illustrative</h3><div class="tablewrap"><table><tbody>
+      <tr><td>Hero orbit scene</td><td><span class="chip illus">illustrative</span></td></tr>
+      <tr><td>Separation curve, TCA, miss distance, relative velocity</td><td><span class="chip good">COMPUTED</span> SGP4 + refinement</td></tr>
+      <tr><td>Encounter geometry plot (Analyze)</td><td><span class="chip good">COMPUTED</span> from propagated states</td></tr>
+      <tr><td>Threat Transfer, FEI, Decision Sensitivity</td><td><span class="chip good">COMPUTED</span> project-defined formulas</td></tr>
+      <tr><td>Demo dataset</td><td><span class="chip demo">DEMO</span> fictitious objects</td></tr>
+      <tr><td>Collision probability, Monte Carlo</td><td><span class="chip bad">unavailable</span> no covariance</td></tr></tbody></table></div></div>
+  </div>
+  <div class="grid g4" style="margin-top:14px">
+    ${[["Input","Two TLEs are validated: length, line numbers, checksums, ranges. Nothing is silently repaired."],["Propagate","The sgp4 package gives position and velocity of both objects at matching UTC times."],["Compare","Baseline and what-if scenarios, plus sensitivity sweeps, with every changed input listed."],["Report","Saved to SQLite; export JSON, CSV and a printable HTML report with provenance and caveats."]].map(([t,x])=>`<div class="card"><h3>${t}</h3><p class="small muted" style="margin:0">${x}</p></div>`).join("")}
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Recent analyses</h3>
+    ${d?.recent?.length ? `<div class="tablewrap"><table><thead><tr><th>#</th><th>Title</th><th>Objects</th><th class="num">Scenarios</th><th class="num">Baseline miss (km)</th><th>Data</th></tr></thead><tbody>
+      ${d.recent.slice(0,4).map(a => `<tr class="click" data-open="${a.id}" tabindex="0" role="button"><td>${a.id}</td><td>${esc(a.title)}</td><td>${esc(a.object_a)} / ${esc(a.object_b)}</td><td class="num">${a.n_scenarios}</td><td class="num">${fmt(a.baseline_miss_km,3)}</td><td>${originChip(a.origin)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No analyses recorded yet.</div>`}</div>`;
+}
+function openAnalysisHandlers(){
+  document.querySelectorAll("[data-open]").forEach(tr => { const go = guard(async () => { S.an = await api("/api/analyses/" + tr.dataset.open); S.tab = "analyze"; await refreshDash(); }); tr.onclick = go; tr.onkeydown = e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); go(); } }; });
+}
+async function ensureDemoPair(){
+  let ds = S.datasets.find(d => d.origin === "synthetic" && d.n_cases > 0);
+  if (!ds) { const r = await post("/api/datasets/demo"); await refreshDatasets(false); ds = {id:r.id}; }
+  return api("/api/datasets/" + ds.id);
+}
+function wMission(){
+  const g = $("#goanalyze"); if (g) g.onclick = () => { S.tab = "analyze"; render(); window.scrollTo(0,0); };
+  const dm = $("#demo"); if (dm) dm.onclick = guard(async () => { if (!S.backend) return; await fillDemoPair(); S.tab = "analyze"; S.msg = {kind:"ok", text:"Synthetic demo pair loaded into the workspace (fictitious objects). Press Run analysis."}; });
+  openAnalysisHandlers();
+}
+async function fillDemoPair(){
+  const ds = await ensureDemoPair(), c = ds.cases[0], oa = ds.objects.find(o => o.object_id === c.object_a), ob = ds.objects.find(o => o.object_id === c.object_b);
+  S.form = S.form || defaultForm();
+  Object.assign(S.form, {mode:"paste", ta:`${oa.name}\n${oa.tle.line1}\n${oa.tle.line2}`, tb:`${ob.name}\n${ob.tle.line1}\n${ob.tle.line2}`, origin:"synthetic",
+    source:ds.source_description, start:c.suggested_window.start_utc, dur:c.suggested_window.duration_s, step:c.suggested_window.step_s});
+}
+
+/* ---------- Analyze ---------- */
+function defaultForm(){
+  const c = S.ds?.cases?.[0], ids = S.ds?.objects.map(o => o.object_id) || [];
+  return {mode:"paste", ta:"", tb:"", origin:"manual", source:"", a:c?.object_a || ids[0] || "", b:c?.object_b || ids[1] || "", dsId:S.dsId,
+    start:"", dur:14400, step:30, scen:[], sweeps:[], fei:{d_ref_km:5, radius_km:10, t_ref_s:3, w_d:0.7, w_t:0.3}};
+}
+const PARAMS = () => S.defs?.perturbations || {};
+function paramOpts(sel){ return Object.entries(PARAMS()).map(([k,v]) => `<option value="${k}" ${k===sel?'selected':''}>${esc(v.description)} (${esc(v.unit)})</option>`).join(""); }
+function pAnalysis(){
+  if (!S.backend) return illustrativePage();
+  if (!S.form) S.form = defaultForm();
+  const f = S.form, can = S.backend.propagation_available, objs = S.ds?.objects || [];
+  const oOpts = sel => objs.map(o => `<option value="${esc(o.object_id)}" ${o.object_id===sel?'selected':''}>${esc(o.object_id)} ${esc(o.name||"(unnamed)")}</option>`).join("");
+  const objectsBlock = f.mode === "paste" ? `
+    <div class="grid g2"><div class="field"><label for="ta">Object A: TLE (optional name line, then lines 1 and 2)</label><textarea id="ta" spellcheck="false" placeholder="NAME&#10;1 NNNNNU ...&#10;2 NNNNN ...">${esc(f.ta)}</textarea><div class="valmsg" id="va" aria-live="polite"></div></div>
+      <div class="field"><label for="tb">Object B: TLE (optional name line, then lines 1 and 2)</label><textarea id="tb" spellcheck="false" placeholder="NAME&#10;1 NNNNNU ...&#10;2 NNNNN ...">${esc(f.tb)}</textarea><div class="valmsg" id="vb" aria-live="polite"></div></div></div>
+    <div class="fgrid"><div class="field"><label for="torigin">Data origin (recorded and shown on results)</label><select id="torigin">${[["manual","Manually entered"],["real","Real (published elements)"],["synthetic","Synthetic / demo"]].map(([v,l])=>`<option value="${v}" ${f.origin===v?'selected':''}>${l}</option>`).join("")}</select></div>
+      <div class="field" style="grid-column:span 2"><label for="tsource">Source description (where and when did these elements come from?)</label><input type="text" id="tsource" value="${esc(f.source)}" placeholder="e.g. CelesTrak GP data, retrieved 2026-10-20"></div></div>
+    <div class="row"><button class="btn" id="fill">Fill with synthetic demo pair</button><span class="small muted">Fictitious objects; origin is set to synthetic automatically.</span></div>`
+  : (S.ds ? `${S.ds.cases.length ? `<div class="field"><label for="fcase">Predefined case</label><select id="fcase"><option value="">Choose a case…</option>${S.ds.cases.map((c,i)=>`<option value="${i}">${esc(c.object_a)} and ${esc(c.object_b)}: ${esc(c.description||'')}</option>`).join("")}</select></div>` : ""}
+    <div class="fgrid"><div class="field"><label for="fa">Object A</label><select id="fa">${oOpts(f.a)}</select></div><div class="field"><label for="fb">Object B</label><select id="fb">${oOpts(f.b)}</select></div></div>
+    <p class="small muted">Dataset: ${esc(S.ds.name)} ${originChip(S.ds.origin)} (choose another on the Datasets page)</p>` : `<div class="empty">No dataset loaded. Use “Enter two TLEs”, or load one on the Datasets page.</div>`);
+  return `<h2>Analyze</h2><p class="lede">Enter two TLEs, choose a time window, optionally add what-if scenarios and a sensitivity sweep, then compute. Distances are km, times UTC, frame TEME.</p>${msgBox()}
+  <div class="card hero-card"><h3>1. Objects</h3>
+   <div class="tabs" role="group" aria-label="Input source"><button data-mode="paste" aria-pressed="${f.mode==='paste'}">Enter two TLEs</button><button data-mode="dataset" aria-pressed="${f.mode==='dataset'}">Use dataset objects</button></div>
+   ${objectsBlock}
+   <div class="grid g2" style="gap:18px;margin-top:14px"><div>
+    <h3>2. Window and sampling</h3>
+    <div class="field"><label for="fstart">Window start (UTC, ISO 8601; empty = later of the two TLE epochs)</label><input type="text" id="fstart" value="${esc(f.start)}" placeholder="2026-10-24T00:00:00Z"></div>
+    <div class="fgrid"><div class="field"><label for="fdur">Duration (s)</label><input type="number" id="fdur" value="${f.dur}" min="1" step="any"></div><div class="field"><label for="fstep">Grid step (s)</label><input type="number" id="fstep" value="${f.step}" min="0.01" step="any"></div></div>
+    <details><summary>Future Exposure Index parameters (project-defined)</summary><div class="fgrid" style="margin-top:8px">
+      ${[["d_ref_km","Reference distance d_ref (km)"],["radius_km","Dwell radius R (km)"],["t_ref_s","Reference dwell t_ref (s)"],["w_d","Weight w_d"],["w_t","Weight w_t"]].map(([k,l])=>`<div class="field"><label for="fei_${k}">${l}</label><input type="number" step="any" id="fei_${k}" value="${f.fei[k]}"></div>`).join("")}</div>
+      <p class="small muted">Adjustable conventions, not physical thresholds.</p></details>
+   </div><div>
+    <h3>3. What-if scenarios <span class="muted small">(hypothetical edits of TLE fields)</span></h3>
+    <div id="scens">${f.scen.length ? f.scen.map(scenCard).join("") : `<div class="empty">No alternatives. The baseline always runs.</div>`}</div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="addscen">Add scenario</button><button class="btn" id="example">Add example scenarios and sweep</button></div>
+    <h3 style="margin-top:16px">4. Sensitivity sweeps</h3>
+    <div id="sweeps">${f.sweeps.length ? f.sweeps.map(sweepCard).join("") : `<div class="empty">No sweeps.</div>`}</div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="addsweep">Add sweep</button></div>
+    <p class="small muted">A sweep varies one input over a range you choose. It shows sensitivity; it is not an uncertainty estimate (TLEs carry no covariance).</p>
+   </div></div>
+   <div class="row" style="margin-top:14px"><button class="btn primary" id="run" ${can&&!S.busy?'':'disabled'}>${S.busy?'<span class="spinner"></span>Computing…':'Run analysis'}</button>
+    ${can?'':'<span class="warn-t small">Disabled: propagation is unavailable (sgp4 not installed).</span>'}</div></div>
+  <div id="results" style="margin-top:16px">${S.an ? resultsHtml(S.an) : `<div class="empty">No result yet. Run an analysis, or open one from History.</div>`}</div>`;
+}
+function scenCard(s, i){
+  return `<div class="scen" data-si="${i}"><div class="row"><div class="field" style="flex:1;margin:0"><label>Scenario name</label><input type="text" data-sname="${i}" value="${esc(s.name)}"></div><button class="btn" data-sdel="${i}">Remove</button></div>
+   ${s.changes.map((c,j)=>`<div class="row" style="margin-top:6px"><select data-ct="${i}.${j}" style="width:80px" aria-label="Target object"><option value="a" ${c.target==='a'?'selected':''}>Obj A</option><option value="b" ${c.target==='b'?'selected':''}>Obj B</option></select>
+     <select data-cp="${i}.${j}" style="flex:1;min-width:200px" aria-label="Parameter">${paramOpts(c.param)}</select><input type="number" step="any" data-cv="${i}.${j}" value="${c.value}" style="width:110px" aria-label="Value"><button class="btn" data-cdel="${i}.${j}" aria-label="Remove change">×</button></div>
+     <div class="small muted">${PARAMS()[c.param] ? "Allowed " + PARAMS()[c.param].min + " to " + PARAMS()[c.param].max + " " + esc(PARAMS()[c.param].unit) : ""}</div>`).join("")}
+   <button class="btn" data-cadd="${i}" style="margin-top:6px">Add change</button></div>`;
+}
+function sweepCard(s, i){
+  const p = PARAMS()[s.param];
+  return `<div class="scen"><div class="row"><select data-wt="${i}" style="width:80px" aria-label="Target object"><option value="a" ${s.target==='a'?'selected':''}>Obj A</option><option value="b" ${s.target==='b'?'selected':''}>Obj B</option></select>
+   <select data-wp="${i}" style="flex:1;min-width:200px" aria-label="Parameter">${paramOpts(s.param)}</select><button class="btn" data-wdel="${i}">Remove</button></div>
+   <div class="fgrid" style="margin-top:6px"><div class="field"><label>Min (${esc(p?.unit||"")})</label><input type="number" step="any" data-wmin="${i}" value="${s.min}"></div><div class="field"><label>Max</label><input type="number" step="any" data-wmax="${i}" value="${s.max}"></div><div class="field"><label>Points (2 to 21)</label><input type="number" data-wn="${i}" value="${s.n}" min="2" max="21"></div></div></div>`;
+}
+function readForm(){
+  const f = S.form;
+  if ($("#ta")) { f.ta = $("#ta").value; f.tb = $("#tb").value; f.origin = $("#torigin").value; f.source = $("#tsource").value; }
+  if ($("#fa")) { f.a = $("#fa").value; f.b = $("#fb").value; }
+  if (!$("#fstart")) return;
+  f.start = $("#fstart").value.trim(); f.dur = +$("#fdur").value; f.step = +$("#fstep").value;
+  Object.keys(f.fei).forEach(k => { const e = $("#fei_"+k); if (e) f.fei[k] = +e.value; });
+  document.querySelectorAll("[data-sname]").forEach(e => f.scen[+e.dataset.sname].name = e.value);
+  document.querySelectorAll("[data-ct]").forEach(e => { const [i,j] = e.dataset.ct.split("."); f.scen[+i].changes[+j].target = e.value; });
+  document.querySelectorAll("[data-cp]").forEach(e => { const [i,j] = e.dataset.cp.split("."); f.scen[+i].changes[+j].param = e.value; });
+  document.querySelectorAll("[data-cv]").forEach(e => { const [i,j] = e.dataset.cv.split("."); f.scen[+i].changes[+j].value = e.value === "" ? "" : +e.value; });
+  document.querySelectorAll("[data-wt]").forEach(e => f.sweeps[+e.dataset.wt].target = e.value);
+  document.querySelectorAll("[data-wp]").forEach(e => f.sweeps[+e.dataset.wp].param = e.value);
+  document.querySelectorAll("[data-wmin]").forEach(e => f.sweeps[+e.dataset.wmin].min = +e.value);
+  document.querySelectorAll("[data-wmax]").forEach(e => f.sweeps[+e.dataset.wmax].max = +e.value);
+  document.querySelectorAll("[data-wn]").forEach(e => f.sweeps[+e.dataset.wn].n = +e.value);
+}
+function defaultChange(){ const k = Object.keys(PARAMS())[0]; return {target:"b", param:k, value:0}; }
+function buildPayload(){
+  const f = S.form, scen = [];
+  for (const s of f.scen) {
+    const p = {a:{}, b:{}};
+    for (const c of s.changes) {
+      if (c.value === "" || Number.isNaN(c.value)) throw {message:`Scenario “${s.name}”: enter a number for every change`};
+      if (p[c.target][c.param] !== undefined) throw {message:`Scenario “${s.name}” changes ${c.param} on object ${c.target.toUpperCase()} twice`};
+      p[c.target][c.param] = c.value;
+    }
+    if (!s.changes.length) throw {message:`Scenario “${s.name}” has no changes; remove it or add a change`};
+    scen.push({name:s.name, perturbations:p});
+  }
+  if (!(f.dur > 0) || !(f.step > 0)) throw {message:"Duration and grid step must be positive numbers"};
+  const body = {duration_s:f.dur, step_s:f.step, scenarios:scen, fei:f.fei,
+    sensitivity: f.sweeps.map(w => ({target:w.target, parameter:w.param, min:w.min, max:w.max, n:w.n}))};
+  if (f.mode === "paste") {
+    if (!f.ta.trim() || !f.tb.trim()) throw {message:"Enter a TLE for both Object A and Object B"};
+    Object.assign(body, {tle_a:f.ta, tle_b:f.tb, origin:f.origin, source_description:f.source});
+  } else {
+    if (!S.dsId || !f.a || !f.b) throw {message:"Choose a dataset and two objects"};
+    Object.assign(body, {dataset_id:S.dsId, object_a:f.a, object_b:f.b});
+  }
+  if (f.start) body.start_utc = f.start;
+  return body;
+}
+const vtimers = {};
+function renderVal(r){
+  if (r.rejected.length) return `<span class="err-t">${r.rejected.map(x => x.issues.filter(i=>i.severity==='error').map(i=>esc(i.message)).join("; ")).join(" | ")}</span>`;
+  if (r.valid.length !== 1) return `<span class="warn-t">Expected exactly one TLE here; found ${r.valid.length}.</span>`;
+  const v = r.valid[0], warn = v.issues.filter(i => i.severity !== "info");
+  return `<span class="ok-t">Valid TLE.</span> <span class="muted">catalog ${esc(v.catalog_number)}, epoch ${esc(v.epoch_utc)}, inclination ${fmt(v.inclination_deg,4)} deg, period ${fmt(v.period_min,2)} min</span>${warn.map(i=>` <span class="warn-t">${esc(i.message)}</span>`).join("")}`;
+}
+function liveValidate(role, delay=350){
+  clearTimeout(vtimers[role]);
+  vtimers[role] = setTimeout(async () => {
+    const el = $("#v"+role), ta = $("#t"+role); if (!el || !ta) return;
+    if (!ta.value.trim()) { el.innerHTML = `<span class="muted">Paste a TLE: optional name line, then line 1 and line 2.</span>`; return; }
+    try { el.innerHTML = renderVal(await post("/api/tle/validate", {text:ta.value})); }
+    catch (e) { el.innerHTML = `<span class="warn-t">${esc(e.message)}</span>`; }
+  }, delay);
+}
+function wAnalysis(){
+  if (!S.backend) { const b = $("#illus"); if (b) b.onclick = () => { S.illustrative = true; render(); }; return; }
+  const f = S.form, keep = () => readForm();
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { keep(); f.mode = b.dataset.mode; if (f.mode==="dataset" && S.ds && !S.ds.objects.find(o=>o.object_id===f.a)) { const c=S.ds.cases[0]; f.a=c?.object_a||S.ds.objects[0]?.object_id; f.b=c?.object_b||S.ds.objects[1]?.object_id; } render(); });
+  if ($("#ta")) { ["a","b"].forEach(r => { $("#t"+r).oninput = () => liveValidate(r); liveValidate(r, 0); }); }
+  const fl = $("#fill"); if (fl) fl.onclick = guard(async () => { keep(); await fillDemoPair(); S.msg = {kind:"ok", text:"Synthetic demo pair loaded (fictitious objects)."}; });
+  const fc = $("#fcase"); if (fc) fc.onchange = () => { if (fc.value === "") return; keep(); const c = S.ds.cases[+fc.value]; f.a = c.object_a; f.b = c.object_b; if (c.suggested_window) { f.start = c.suggested_window.start_utc; f.dur = c.suggested_window.duration_s; f.step = c.suggested_window.step_s; } render(); };
+  $("#addscen").onclick = () => { keep(); f.scen.push({name:"Alternative " + (f.scen.length+1), changes:[defaultChange()]}); render(); };
+  $("#addsweep").onclick = () => { keep(); f.sweeps.push({target:"b", param:"d_mean_anomaly_deg", min:-0.1, max:0.1, n:9}); render(); };
+  $("#example").onclick = () => { keep(); f.scen = [
+      {name:"B along-track +0.02 deg", changes:[{target:"b", param:"d_mean_anomaly_deg", value:0.02}]},
+      {name:"B drag x2", changes:[{target:"b", param:"bstar_scale", value:2}]},
+      {name:"A inclination +0.01 deg", changes:[{target:"a", param:"d_inclination_deg", value:0.01}]}];
+    f.sweeps = [{target:"b", param:"d_mean_anomaly_deg", min:-0.1, max:0.1, n:9}]; render(); };
+  document.querySelectorAll("[data-sdel]").forEach(b => b.onclick = () => { keep(); f.scen.splice(+b.dataset.sdel,1); render(); });
+  document.querySelectorAll("[data-cadd]").forEach(b => b.onclick = () => { keep(); f.scen[+b.dataset.cadd].changes.push(defaultChange()); render(); });
+  document.querySelectorAll("[data-cdel]").forEach(b => b.onclick = () => { keep(); const [i,j] = b.dataset.cdel.split("."); f.scen[+i].changes.splice(+j,1); render(); });
+  document.querySelectorAll("[data-cp],[data-wp]").forEach(e => e.onchange = () => { keep(); render(); });
+  document.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => { keep(); f.sweeps.splice(+b.dataset.wdel,1); render(); });
+  $("#run").onclick = async () => {
+    keep(); S.msg = null; S.busy = true; render();
+    try {
+      const body = buildPayload(); S.an = await post("/api/analyses", body);
+      await refreshDatasets(true); S.form.dsId = S.dsId; S.view = {zoom:"tca", proj:"xy"};
+      S.msg = {kind:"ok", text:`Analysis #${S.an.id} computed and saved.`};
+    } catch (e) { S.msg = {kind:"err", text:e.message || String(e), code:e.code}; }
+    S.busy = false; render();
+    if (S.an && !S.msg?.code && S.msg?.kind === "ok") { const r = $("#resultsroot"); if (r) r.scrollIntoView({behavior: REDUCED ? "auto" : "smooth", block:"start"}); }
+  };
+  wireResults();
+}
+
+/* ---------- Data ---------- */
+function pData(){
+  if (!S.backend) return `<h2>Data and objects</h2>${msgBox()}<div class="empty">Backend not connected: datasets are stored by the backend.</div>`;
+  const dsList = S.datasets.map(d => `<tr class="click ${d.id===S.dsId?'sel':''}" data-ds="${d.id}" tabindex="0" role="button"><td>${d.id}</td><td>${esc(d.name)}</td><td>${originChip(d.origin)}</td><td class="num">${d.n_objects}</td><td class="num">${d.n_cases}</td><td>${esc(d.validation.outcome.replace(/_/g,' '))}</td></tr>`).join("");
+  const ds = S.ds;
+  return `<h2>Data and objects</h2><p class="lede">Load the offline synthetic set or import TLE text. Invalid records are rejected with the reason; nothing is silently repaired and the original text is kept.</p>${msgBox()}
+  <div class="grid g2">
+   <div class="card"><h3>Datasets</h3>
+     <div class="row" style="margin-bottom:10px"><button class="btn primary" id="loaddemo">Load synthetic demo dataset</button><button class="btn danger" id="reset">Reset demo data</button></div>
+     ${S.datasets.length ? `<div class="tablewrap"><table><thead><tr><th>#</th><th>Name</th><th>Origin</th><th class="num">Objects</th><th class="num">Cases</th><th>Validation</th></tr></thead><tbody>${dsList}</tbody></table></div>` : `<div class="empty">No datasets yet.</div>`}
+     <p class="small muted">Reset deletes every dataset and analysis in the local database and reloads the synthetic demo.</p></div>
+   <div class="card"><h3>Import TLE data</h3>
+     <div class="field"><label for="tfile">Choose a TLE or 3LE text file (optional)</label><input type="file" id="tfile" accept=".tle,.txt,.3le,text/plain"></div>
+     <div class="field"><label for="ttext">TLE text (2-line or 3-line sets)</label><textarea id="ttext" spellcheck="false" placeholder="NAME&#10;1 NNNNNU ...&#10;2 NNNNN ..."></textarea></div>
+     <div class="fgrid"><div class="field"><label for="tname">Dataset name</label><input type="text" id="tname"></div>
+       <div class="field"><label for="torigin">Data origin (required)</label><select id="torigin"><option value="real">Real (published elements)</option><option value="manual" selected>Manually entered</option><option value="synthetic">Synthetic</option></select></div></div>
+     <div class="field"><label for="tsource">Source description (required: where did these elements come from, and when?)</label><input type="text" id="tsource" placeholder="e.g. CelesTrak GP download, retrieved 2026-10-20"></div>
+     <button class="btn primary" id="import">Validate and import</button>
+     <p class="small muted">Supported: TLE/3LE. CSV and OMM/JSON import are unavailable in this version.</p></div>
+  </div>
+  ${ds ? `<div class="card" style="margin-top:14px"><h3>Objects in “${esc(ds.name)}” ${originChip(ds.origin)}</h3>
+    <div class="tablewrap"><table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Epoch (UTC)</th><th class="num">Incl. (deg)</th><th class="num">Period (min)</th><th class="num">B* (1/Re)</th><th>Checks</th></tr></thead><tbody>
+    ${ds.objects.map(o => `<tr class="click ${o.object_id===S.objSel?'sel':''}" data-obj="${esc(o.object_id)}" tabindex="0" role="button"><td>${esc(o.object_id)}</td><td>${o.name?esc(o.name):'<span class="muted">unknown</span>'}</td><td>${o.object_type?esc(o.object_type):'<span class="muted">unknown</span>'}</td><td>${esc(o.tle.epoch_utc)}</td><td class="num">${fmt(o.tle.inclination_deg,4)}</td><td class="num">${fmt(o.tle.period_min,2)}</td><td class="num">${o.tle.bstar_per_earth_radius.toExponential(3)}</td><td>${o.issues.length? o.issues.length+" notes":"ok"}</td></tr>`).join("")}</tbody></table></div>
+    ${objDetail()}
+    ${ds.rejected.length ? `<h3 style="margin-top:14px">Rejected records (${ds.rejected.length})</h3>${ds.rejected.map(r => `<div class="banner err"><b>${esc(r.name||"unnamed record")}</b> (source line${r.source_lines.length>1?'s':''} ${r.source_lines.join("-")})<ul class="tight">${r.issues.map(i=>`<li>${esc(i.message)} <span class="muted small">(${esc(i.code)})</span></li>`).join("")}</ul></div>`).join("")}` : ""}
+    ${ds.cases.length ? `<h3 style="margin-top:14px">Defined conjunction cases</h3><ul class="tight">${ds.cases.map(c=>`<li><b>${esc(c.object_a)}</b> and <b>${esc(c.object_b)}</b>: ${esc(c.description||"")}</li>`).join("")}</ul>` : ""}
+  </div>` : ""}`;
+}
+function objDetail(){
+  const o = S.ds?.objects.find(x => x.object_id === S.objSel); if (!o) return `<p class="small muted">Select an object to see its TLE, provenance and validation messages.</p>`;
+  return `<div class="card" style="margin-top:12px;background:var(--panel2)"><h3>${esc(o.name||o.object_id)}</h3><div class="grid g2"><div>
+    <dl class="kv"><dt>Provenance</dt><dd>${originChip(o.provenance.origin)} ${esc(o.provenance.source)}</dd><dt>File</dt><dd>${esc(o.provenance.filename||"not recorded")}</dd><dt>Imported</dt><dd>${esc(o.provenance.imported_utc)}</dd>
+    <dt>RAAN / argp / M</dt><dd>${fmt(o.tle.raan_deg,4)} / ${fmt(o.tle.arg_perigee_deg,4)} / ${fmt(o.tle.mean_anomaly_deg,4)} deg</dd><dt>Eccentricity</dt><dd>${o.tle.eccentricity}</dd><dt>Mean motion</dt><dd>${fmt(o.tle.mean_motion_rev_per_day,8)} rev/day</dd>
+    <dt>Other metadata</dt><dd>${Object.keys(o.metadata).length ? esc(JSON.stringify(o.metadata)) : '<span class="muted">none supplied (unknown)</span>'}</dd></dl></div>
+    <div><div class="mono">${esc(o.tle.line1)}\n${esc(o.tle.line2)}</div><p class="small muted">Original TLE lines as imported.</p>
+    ${o.issues.length ? `<ul class="tight">${o.issues.map(i=>`<li class="${i.severity==='warning'?'warn-t':''}">${esc(i.severity)}: ${esc(i.message)}</li>`).join("")}</ul>` : `<span class="ok-t small">No validation messages.</span>`}</div></div></div>`;
+}
+function wData(){
+  const dm = $("#loaddemo"); if (dm) dm.onclick = guard(async () => { const r = await post("/api/datasets/demo"); S.dsId = r.id; S.an = null; await refreshDatasets(true); S.msg = {kind:"ok", text:"Synthetic demo dataset loaded (fictitious objects)."}; });
+  const rs = $("#reset"); if (rs) rs.onclick = guard(async () => { if (!confirm("Delete all datasets and analyses and reload the synthetic demo?")) return; await post("/api/reset", {}); S.an = null; S.objSel = null; await refreshDatasets(true); S.msg = {kind:"ok", text:"Demo data reset."}; });
+  document.querySelectorAll("[data-ds]").forEach(tr => { const go = guard(async () => { S.dsId = +tr.dataset.ds; S.an = null; S.objSel = null; S.ds = await api("/api/datasets/" + S.dsId); await refreshDash(); }); tr.onclick = go; tr.onkeydown = e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); go(); } }; });
+  document.querySelectorAll("[data-obj]").forEach(tr => { const go = () => { S.objSel = tr.dataset.obj; render(); }; tr.onclick = go; tr.onkeydown = e => { if (e.key==="Enter"||e.key===" ") { e.preventDefault(); go(); } }; });
+  const tf = $("#tfile"); if (tf) tf.onchange = () => { const f = tf.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { $("#ttext").value = r.result; if (!$("#tname").value) $("#tname").value = f.name; S.fileName = f.name; }; r.readAsText(f); };
+  const im = $("#import"); if (im) im.onclick = guard(async () => {
+    const r = await post("/api/datasets/import", {text:$("#ttext").value, filename:S.fileName||null, name:$("#tname").value||null, origin:$("#torigin").value, source_description:$("#tsource").value});
+    S.dsId = r.id; S.an = null; await refreshDatasets(true);
+    S.msg = {kind:"ok", text:`Imported ${r.validation.accepted} object(s); ${r.validation.rejected} rejected.`};
+  });
+}
+
+/* ---------- results ---------- */
+const tmin = s => s/60;
+function resultsHtml(an){
+  const sc = an.scenarios, base = sc[0].result, ver = an.software.sgp4_verification, syn = an.dataset.origin === "synthetic";
+  const dw0 = sc[0].dwell;
+  const sepSeries = sc.map((s,i) => {
+    let t = s.result.series.t_offset_s, y = s.result.series.separation_km;
+    if (S.view.zoom === "tca") { const c = base.tca_offset_s, w = 600; const idx = t.map((v,k)=>k).filter(k => Math.abs(t[k]-c) <= w); t = idx.map(k=>t[k]); y = idx.map(k=>y[k]); }
+    return {name:s.name, color:COLORS[i%COLORS.length], x:t.map(tmin), y, dash: i? "6 3" : null};
+  });
+  const markers = sc.map((s,i) => ({x:tmin(s.result.tca_offset_s), y:s.result.miss_distance_km, color:COLORS[i%COLORS.length], label: i===0 ? `closest approach ${fmt(s.result.miss_distance_km,2)} km` : ""}));
+  const rel = base.series, tsel = S.view.zoom === "tca" ? 600 : 1e12;
+  const pr = S.view.proj, ax = {xy:["rel_x_km","rel_y_km"], xz:["rel_x_km","rel_z_km"], yz:["rel_y_km","rel_z_km"]}[pr];
+  const idx = rel.t_offset_s.map((v,k)=>k).filter(k => Math.abs(rel.t_offset_s[k]-base.tca_offset_s) <= Math.max(tsel, 900));
+  const trajX = idx.map(k => rel[ax[0]][k]), trajY = idx.map(k => rel[ax[1]][k]);
+  const rp = base.rel_position_km, comp = {xy:[rp[0],rp[1]], xz:[rp[0],rp[2]], yz:[rp[1],rp[2]]}[pr];
+  const barItems = sc.map((s,i) => ({label:s.name, v:s.result.miss_distance_km, color:COLORS[i%COLORS.length]}));
+  const allMiss = []; sc.forEach(s => allMiss.push({v:s.result.miss_distance_km, label:s.name+" (scenario)"}));
+  an.sensitivity.forEach(sx => sx.miss_table.rows.forEach(r => { if (r.y != null) allMiss.push({v:r.y, label:`${sx.parameter}=${r.p}`}); }));
+  return `<div id="resultsroot">
+  <div class="card hero-card reveal"><div class="row" style="justify-content:space-between"><div><h2 style="margin:0">${esc(an.title)}</h2><span class="muted small">Analysis #${an.id}, created ${esc(an.created_utc)}</span></div>
+    <div class="row"><a class="btn" href="${API}/api/analyses/${an.id}/report.html" target="_blank" rel="noopener">Report (HTML)</a><a class="btn" href="${API}/api/analyses/${an.id}/report.csv">Scenarios (CSV)</a>${an.sensitivity.length?`<a class="btn" href="${API}/api/analyses/${an.id}/sensitivity.csv">Sensitivity (CSV)</a>`:""}<a class="btn" href="${API}/api/analyses/${an.id}/export.json">Full record (JSON)</a></div></div>
+    <div style="margin-top:8px"><span class="chip good">COMPUTED</span><span class="chip">${esc(sc[0].propagator.name)} ${esc(sc[0].propagator.version)}</span><span class="chip ${ver.verified?'good':'bad'}">${ver.verified?'propagation verified':'propagation NOT verified'}</span>${originChip(an.dataset.origin)}<span class="chip">frame ${esc(base.frame)}</span></div>
+    ${syn?`<div class="banner warn" style="margin-top:8px"><b>Synthetic demonstration data.</b> These objects are fictitious; results do not describe any real event.</div>`:""}
+    ${!ver.verified?`<div class="banner warn" style="margin-top:8px">Propagation has not been verified on this machine (${esc(ver.reason||"")}). Treat these numbers as unverified.</div>`:""}
+  </div>
+  <div class="grid g4" style="margin-top:14px">
+    <div class="card stat"><div class="l">Baseline closest approach (miss distance)</div><div class="v">${fmt(base.miss_distance_km,3)}<span class="u">km</span></div><div class="n">${base.bracketed?"Minimum bracketed inside the window and refined.":"<span class='warn-t'>Minimum is at the window edge. Extend the window.</span>"}</div></div>
+    <div class="card stat"><div class="l">Time of closest approach (UTC)</div><div class="v" style="font-size:20px;padding:5px 0">${esc(base.tca_utc)}</div><div class="n">${fmt(base.tca_offset_s/60,3)} min after window start</div></div>
+    <div class="card stat"><div class="l">Relative speed at TCA</div><div class="v">${fmt(base.rel_speed_km_s,3)}<span class="u">km/s</span></div><div class="n">Relative vector (${base.rel_position_km.map(v=>fmt(v,2)).join(", ")}) km, ${esc(base.frame)}</div></div>
+    <div class="card stat"><div class="l">Time inside ${dw0?dw0.radius_km:"?"} km</div><div class="v">${dw0?fmt(dw0.duration_s,2):"unavailable"}<span class="u">s</span></div><div class="n">${dw0&&(dw0.censored_low||dw0.censored_high)?"Censored by window edge. ":""}Used in FEI.</div></div>
+  </div>
+  ${an.warnings.length ? `<div class="banner warn" style="margin-top:14px"><b>Warnings</b><ul class="tight">${an.warnings.map(w=>`<li>${esc(w)}</li>`).join("")}</ul></div>` : ""}
+
+  <div class="card hero-card" style="margin-top:14px"><h3>Separation between the two objects over time</h3>
+    <div class="tabs" role="group" aria-label="Zoom"><button data-zoom="all" aria-pressed="${S.view.zoom==='all'}">Whole window</button><button data-zoom="tca" aria-pressed="${S.view.zoom==='tca'}">Around closest approach (±10 min)</button></div>
+    ${lineChart({series:sepSeries, markers, xlabel:`Time since window start (min); start ${base.window_start_utc}`, ylabel:"Separation (km)", ymin0:true, yfmt:v=>fmt(v,3)+" km", tipX:x=>"t = "+fmt(x,3)+" min", aria:"Separation in kilometres versus time in minutes for each scenario, with the closest approach marked"})}
+    <p class="small muted">Samples every ${an.window.step_s} s; the marked minimum is refined by golden-section search to ${an.window.tol_s} s. This is the closest approach inside the analysed window, not a guaranteed global minimum. ${base.n_local_minima>1?base.n_local_minima+" local minima exist in this window; the smallest is marked.":""}</p></div>
+
+  <div class="grid g2" style="margin-top:14px">
+   <div class="card"><h3>Encounter geometry: B relative to A <span class="chip good">COMPUTED from propagated states</span></h3>
+    <div class="tabs" role="group" aria-label="Projection">${["xy","xz","yz"].map(p=>`<button data-proj="${p}" aria-pressed="${S.view.proj===p}">${p.toUpperCase()} plane</button>`).join("")}</div>
+    ${lineChart({series:[{name:"B − A, baseline", color:COLORS[0], x:trajX, y:trajY}], markers:[{x:comp[0], y:comp[1], color:"#f2ee8d", label:"closest approach"},{x:0,y:0,color:"#93a7bf",label:"object A"}], equal:true, xlabel:`${ax[0].replace('rel_','').replace('_km','').toUpperCase()} (km, ${base.frame})`, ylabel:`${ax[1].replace('rel_','').replace('_km','').toUpperCase()} (km, ${base.frame})`, yfmt:v=>fmt(v,1)+" km", tipX:x=>"x = "+fmt(x,1)+" km", h:340, aria:"Projection of the relative position vector of object B with respect to object A"})}
+    <p class="small muted">Positions are TLE-based predictions, not measurements. Shown over ±${S.view.zoom==='tca'?10:15} min around the closest approach; equal axis scale.</p></div>
+   <div class="card"><h3>Baseline versus alternatives</h3>${barChart(barItems,"Miss distance (km)","km")}
+    <p class="small muted">Computed miss distance for each scenario in the same window.</p></div>
+  </div>
+
+  <div class="card" style="margin-top:14px"><h3>Scenario comparison</h3><div class="tablewrap"><table><thead><tr><th>Scenario</th><th>Inputs changed</th><th>TCA (UTC)</th><th class="num">Miss (km)</th><th class="num">Threat Transfer (km)</th><th class="num">TT relative</th><th class="num">ΔTCA (s)</th><th class="num">v rel (km/s)</th><th class="num">Time in R (s)</th></tr></thead><tbody>
+   ${sc.map((s,i) => { const c = i ? an.comparison[i-1] : null, t = c?.threat_transfer;
+     const ch = i ? c.inputs_changed.map(x=>`${x.object.toUpperCase()}.${x.field}: ${x.original} → ${x.new} ${x.unit}`).join("; ") : "none";
+     return `<tr><td><b>${esc(s.name)}</b></td><td>${esc(ch)}</td><td>${esc(s.result.tca_utc)}</td><td class="num">${fmt(s.result.miss_distance_km,3)}</td><td class="num">${i?fmt(t.tt_km,3):"—"}</td><td class="num">${i?fmt(t.tt_rel,4):"—"}</td><td class="num">${i?fmt(t.delta_tca_s,3):"—"}</td><td class="num">${fmt(s.result.rel_speed_km_s,4)}</td><td class="num">${s.dwell?fmt(s.dwell.duration_s,3):"unavailable"}</td></tr>`; }).join("")}</tbody></table></div>
+   <p class="small muted">Threat Transfer (project-defined) = baseline miss − alternative miss. Positive means the alternative passes closer. Inputs not listed were not changed.</p></div>
+
+  <div class="card" style="margin-top:14px"><h3>Future Exposure Index <span class="muted small">(project-defined comparative indicator; not a probability)</span></h3>
+   <div class="tablewrap"><table><thead><tr><th class="num">Rank</th><th>Scenario</th><th class="num">Miss (km)</th><th class="num">Dwell (s)</th><th class="num">Closeness c_d</th><th class="num">Dwell term c_t</th><th class="num">FEI (0–100)</th></tr></thead><tbody>
+   ${an.fei.ranking.map(r=>`<tr><td class="num">${r.rank}</td><td>${esc(r.name)}</td><td class="num">${fmt(r.miss_distance_km,3)}</td><td class="num">${fmt(r.dwell_s,3)}</td><td class="num">${fmt(r.closeness,4)}</td><td class="num">${fmt(r.dwell_term,4)}</td><td class="num"><b>${fmt(r.fei,2)}</b></td></tr>`).join("")}</tbody></table></div>
+   ${an.fei.unranked.length?`<p class="warn-t small">Not ranked (missing data): ${esc(an.fei.unranked.map(u=>u.name).join(", "))}</p>`:""}
+   <p class="small muted">Parameters: d_ref ${an.fei.params.d_ref_km} km, R ${an.fei.params.radius_km} km, t_ref ${an.fei.params.t_ref_s} s, weights ${an.fei.params.w_d} / ${an.fei.params.w_t}. Ranks compare only the scenarios above.</p></div>
+
+  ${an.sensitivity.length ? an.sensitivity.map((sx,k)=>{ const t = sx.miss_table, tt = sx.tca_table;
+    return `<div class="card" style="margin-top:14px"><h3>Decision sensitivity: object ${sx.target.toUpperCase()}, ${esc(sx.parameter)} <span class="muted small">(sensitivity experiment; not a validated uncertainty estimate)</span></h3>
+    <div class="grid g2"><div>${lineChart({series:[{name:"Miss distance", color:COLORS[0], x:t.rows.map(r=>r.p), y:t.rows.map(r=>r.y), dots:true}], xlabel:`${sx.parameter} (${sx.unit})`, ylabel:"Miss distance (km)", ymin0:true, yfmt:v=>fmt(v,3)+" km", tipX:x=>sx.parameter+" = "+x, aria:"Miss distance versus perturbation"})}</div>
+    <div>${lineChart({series:[{name:"TCA offset", color:COLORS[1], x:tt.rows.map(r=>r.p), y:tt.rows.map(r=>r.y), dots:true}], xlabel:`${sx.parameter} (${sx.unit})`, ylabel:"TCA offset from window start (s)", yfmt:v=>fmt(v,2)+" s", tipX:x=>sx.parameter+" = "+x, aria:"Time of closest approach versus perturbation"})}</div></div>
+    <div class="tablewrap"><table><thead><tr><th class="num">${esc(sx.parameter)} (${esc(sx.unit)})</th><th class="num">Miss (km)</th><th class="num">Δ miss (km)</th><th class="num">Slope (km per ${esc(sx.unit)})</th><th class="num">TCA offset (s)</th></tr></thead><tbody>
+    ${t.rows.map((r,i)=>`<tr><td class="num">${fmt(r.p,4)}</td><td class="num">${fmt(r.y,3)}</td><td class="num">${fmt(r.delta_y,3)}</td><td class="num">${fmt(r.slope,3)}</td><td class="num">${fmt(tt.rows[i].y,2)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="small muted">Least-squares slope over the range: ${fmt(t.least_squares_slope,3)} km per ${esc(sx.unit)}. Range of miss distance: ${fmt(t.output_range,3)} km. ${sx.errors.length?`<span class="warn-t">${sx.errors.length} sweep point(s) failed: ${esc(sx.errors[0].error)}</span>`:""}</p></div>`; }).join("") : ""}
+
+  <div class="card" style="margin-top:14px"><h3>Distribution of computed outputs across what-if runs</h3>
+   ${lineChart({series:[{name:"Miss distance of each run", color:COLORS[2], x:allMiss.map((_,i)=>i+1), y:allMiss.map(m=>m.v), dots:true, line:false}], xlabel:"Run index (scenarios first, then sweep points)", ylabel:"Miss distance (km)", ymin0:true, yfmt:v=>fmt(v,3)+" km", tipX:x=>"run "+x+": "+(allMiss[x-1]?.label||""), aria:"Miss distance of each computed run"})}
+   <p class="small muted">${allMiss.length} runs: minimum ${fmt(Math.min(...allMiss.map(m=>m.v)),3)} km, maximum ${fmt(Math.max(...allMiss.map(m=>m.v)),3)} km. This is the spread of hypothetical what-if outputs. It is <b>not</b> a probability distribution and implies no collision probability.</p></div>
+
+  <div class="card" style="margin-top:14px"><h3>What this result says, and what it does not</h3>${explain(an)}</div>
+
+  <div class="card" style="margin-top:14px"><h3>Calculation record</h3><dl class="kv">
+    <dt>Method</dt><dd>${esc(sc[0].propagator.name)} ${esc(sc[0].propagator.version)}; uniform grid ${an.window.step_s} s, local-minimum bracketing, golden-section refinement (${an.window.tol_s} s)</dd>
+    <dt>TLE epochs</dt><dd>A ${esc(an.input_summary.epoch_a_utc)}; B ${esc(an.input_summary.epoch_b_utc)}; difference ${fmt(an.input_summary.epoch_difference_s/86400,3)} days</dd><dt>Window</dt><dd>${esc(an.window.start_utc)} for ${an.window.duration_s} s</dd>
+    <dt>Dataset</dt><dd>${esc(an.dataset.name)} ${originChip(an.dataset.origin)}</dd>
+    <dt>Software</dt><dd>OFDE ${esc(an.software.ofde)}, Python ${esc(an.software.python)}, sgp4 ${esc(an.software.sgp4_version||"n/a")}</dd>
+    <dt>Request hash</dt><dd class="mono">${esc(an.reproducibility.request_sha256)}</dd><dt>Result hash</dt><dd class="mono">${esc(an.reproducibility.result_sha256)}</dd></dl>
+    <ul class="tight small muted">${an.limitations.map(l=>`<li>${esc(l)}</li>`).join("")}</ul></div></div>`;
+}
+function explain(an){
+  const sc = an.scenarios, b = sc[0].result; let h = `<ul class="tight">`;
+  h += `<li><b>Baseline.</b> Using the given TLE mean elements and SGP4, the objects come within <b>${fmt(b.miss_distance_km,3)} km</b> of each other at ${esc(b.tca_utc)}, moving at ${fmt(b.rel_speed_km_s,3)} km/s relative to each other. ${b.bracketed?"":"The minimum is at the window edge, so the true closest approach may lie outside the window. "}</li>`;
+  an.comparison.forEach(c => { const t = c.threat_transfer; h += `<li><b>${esc(c.name)}.</b> After changing ${esc(c.inputs_changed.map(x=>x.object.toUpperCase()+"."+x.field).join(", "))}, the miss distance is ${fmt(sc.find(s=>s.id===c.id).result.miss_distance_km,3)} km (Threat Transfer ${t.tt_km==null?"unavailable":(t.tt_km>=0?"+":"")+fmt(t.tt_km,3)+" km"}) and the closest approach shifts by ${fmt(t.delta_tca_s,2)} s.</li>`; });
+  an.sensitivity.forEach(sx => { const t = sx.miss_table; h += `<li><b>Sensitivity to ${esc(sx.parameter)} on object ${sx.target.toUpperCase()}.</b> Over the range you chose, the miss distance varied by ${fmt(t.output_range,3)} km. A large range means the prediction is fragile with respect to that input.</li>`; });
+  h += `</ul><p><b>Cannot be concluded:</b> a collision probability (no covariance exists in TLE data), whether a manoeuvre is needed, or that the minimum is global beyond this window. The metrics shown are project-defined. For operational decisions use professional conjunction assessment with covariance data and fresh observations.</p>
+  <p class="muted small">Useful next steps: obtain a fresher TLE or an ephemeris with covariance for both objects, widen the window to confirm the minimum is bracketed, and compare against an independent tool.</p>`;
+  return h;
+}
+function wireResults(){
+  document.querySelectorAll("[data-zoom]").forEach(b => b.onclick = () => { S.view.zoom = b.dataset.zoom; render(); });
+  document.querySelectorAll("[data-proj]").forEach(b => b.onclick = () => { S.view.proj = b.dataset.proj; render(); });
+}
+
+/* ---------- Illustrative (backend unavailable) ---------- */
+function illustrativePage(){
+  if (!S.illustrative) return `<h2>Analysis</h2>${msgBox()}<div class="banner err"><b>Real analysis needs the local backend.</b> Start it, then press Retry connection above.</div>
+    <div class="card"><h3>Illustrative demonstration (no backend)</h3><p>You can view a hypothetical curve that shows what a closest-approach plot looks like. Every number in it is invented for illustration and is <b>not computed</b> from any orbital data.</p><button class="btn" id="illus">Show illustrative example</button></div>`;
+  // hyperbola s(t) = sqrt(d^2 + v^2 (t-t0)^2) with invented parameters
+  const d = 3.0, v = 10.0, t0 = 600, xs = [], ys = []; for (let t = 0; t <= 1200; t += 10) { xs.push(t/60); ys.push(Math.sqrt(d*d + v*v*(t-t0)*(t-t0))); }
+  return `<h2>Analysis</h2><div class="banner warn"><b>ILLUSTRATIVE, NOT COMPUTED.</b> Invented numbers (miss ${d} km, relative speed ${v} km/s) drawn from a formula to show how results will look. Nothing here describes a real object.</div>
+   <div class="card"><span class="chip illus">illustrative</span>${lineChart({series:[{name:"Illustrative separation", color:"#e3a63c", x:xs, y:ys}], markers:[{x:t0/60, y:d, color:"#e3a63c", label:"illustrative minimum"}], xlabel:"Time (min), illustrative", ylabel:"Separation (km), illustrative", ymin0:true})}
+   <button class="btn" id="illusback" onclick="S.illustrative=false;render()">Hide example</button></div>`;
+}
+
+/* ---------- Metrics ---------- */
+function pMetrics(){
+  const d = S.defs;
+  return `<h2>Metrics</h2><p class="lede">Standard orbital quantities (positions, TCA, miss distance, relative velocity) come from SGP4 and a numerical search. The three metrics below are <b>defined by this project</b>. They are not aerospace standards and none of them is a collision probability.</p>
+  <div class="grid g2">
+   <div class="card"><h3>Threat Transfer</h3><p><b>Plain language:</b> how much closer or farther the conjunction becomes when you change an assumption.</p>
+    <p class="mono">TT_km = d_baseline − d_alternative   [km]\nTT_rel = TT_km / d_baseline   [dimensionless]\nΔTCA = t_alt − t_base   [s]</p>
+    <p><b>Inputs:</b> computed miss distances d (km) and times of closest approach t within the same window. <b>Interpretation:</b> positive TT means the alternative passes closer than the baseline.</p>
+    <p><b>Worked example (synthetic numbers):</b> d_baseline = 10 km, d_alternative = 6 km gives TT_km = 4 km and TT_rel = 0.40.</p>
+    <p class="small muted"><b>Limits:</b> compares computed values only; no covariance, so it is not a statement about likelihood. Undefined if d_baseline = 0. Validation: unit tests with this exact example.</p></div>
+   <div class="card"><h3>Future Exposure Index (FEI)</h3><p><b>Plain language:</b> a 0 to 100 indicator that ranks scenarios by how close and how long the objects stay inside a chosen radius.</p>
+    <p class="mono">c_d = d_ref / (d_ref + d)\nc_t = min(1, T / t_ref)\nFEI = 100 (w_d c_d + w_t c_t) / (w_d + w_t)</p>
+    <p><b>Inputs:</b> d = miss distance (km), T = time inside radius R (s); d_ref, R, t_ref, w_d, w_t are adjustable (defaults ${d?`${d.fei.default_params.d_ref_km} km, ${d.fei.default_params.radius_km} km, ${d.fei.default_params.t_ref_s} s, ${d.fei.default_params.w_d}, ${d.fei.default_params.w_t}`:"5 km, 10 km, 3 s, 0.7, 0.3"}). Missing data are listed as unranked, never zero-filled.</p>
+    <p><b>Worked example (synthetic):</b> d = d_ref = 5 km gives c_d = 0.5; T = 1.5 s with t_ref = 3 s gives c_t = 0.5; FEI = 50.</p>
+    <p class="small muted"><b>Limits:</b> the reference values are conventions, not physical thresholds; ranks are only meaningful among the compared scenarios. Not a collision probability or universal risk score.</p></div>
+   <div class="card"><h3>Decision Sensitivity</h3><p><b>Plain language:</b> how strongly an output (miss distance or TCA) moves when one input is changed over a range.</p>
+    <p class="mono">S_k = (y_k − y_0) / (p_k − p_0)   [unit of y per unit of p]\nplus least-squares slope over the sweep</p>
+    <p><b>Worked example (synthetic):</b> y = 2p + 1 swept over p = −2…2 gives slope 2 at every point.</p>
+    <p class="small muted"><b>Limits:</b> a sensitivity experiment uses hypothetical perturbations you choose. It differs from uncertainty propagation, which would need a state covariance and a defined input distribution. Both are unavailable from TLE data alone.</p></div>
+   <div class="card"><h3>Sensitivity versus uncertainty</h3><p>Sensitivity analysis asks: <i>if this input were different by this amount, how would the answer change?</i> Uncertainty propagation asks: <i>given what we know about how wrong the inputs may be, how wrong may the answer be?</i> The second needs a covariance. OFDE offers the first only, and labels every sweep a sensitivity experiment. Monte Carlo and probability of collision are <b>unavailable</b>.</p></div>
+  </div>
+  ${d ? `<div class="card" style="margin-top:14px"><h3>Supported what-if parameters</h3><div class="tablewrap"><table><thead><tr><th>Parameter</th><th>Meaning</th><th>Unit</th><th class="num">Min</th><th class="num">Max</th></tr></thead><tbody>${Object.entries(d.perturbations).map(([k,v])=>`<tr><td class="mono">${esc(k)}</td><td>${esc(v.description)}</td><td>${esc(v.unit)}</td><td class="num">${v.min}</td><td class="num">${v.max}</td></tr>`).join("")}</tbody></table></div></div>` : ""}`;
+}
+
+/* ---------- Help ---------- */
+function pHelp(){
+  return `<h2>Help for beginners</h2><p class="lede">Two objects in orbit are never exactly where a prediction says. This tool shows how a predicted close pass changes when the inputs change.</p>
+  <div class="grid g2"><div class="card"><h3>Judge walkthrough</h3><ol class="tight">
+    <li>Data and objects: press <b>Load synthetic demo dataset</b>.</li><li>Analysis: choose the predefined case (or any two objects).</li>
+    <li>Press <b>Add example scenarios and sweep</b>, then <b>Run analysis</b>.</li><li>Read the closest approach and the separation curve.</li>
+    <li>Compare scenarios in the table and the bar chart.</li><li>Check the sensitivity charts to see how fragile the result is.</li>
+    <li>Read “What this result says” and export the report.</li></ol></div>
+   <div class="card"><h3>Terms</h3><dl class="kv"><dt>TLE</dt><dd>Two-line element set: compact mean orbital elements with an epoch.</dd><dt>SGP4</dt><dd>The standard model that turns a TLE into a position and velocity at a time.</dd>
+    <dt>TEME</dt><dd>The inertial-like reference frame SGP4 outputs (km, km/s).</dd><dt>TCA</dt><dd>Time of closest approach.</dd><dt>Miss distance</dt><dd>Separation at the TCA (km).</dd>
+    <dt>Bracketed</dt><dd>The minimum lies strictly inside the window, so it is a true local minimum.</dd><dt>Synthetic</dt><dd>Invented demo data, unrelated to real objects.</dd><dt>Unavailable</dt><dd>Not computed because inputs or method are missing. Never shown as zero.</dd></dl></div>
+   <div class="card"><h3>Honest limits</h3><ul class="tight"><li>TLEs are approximate; accuracy degrades with age.</li><li>No covariance: no collision probability and no Monte Carlo.</li><li>The closest approach is the minimum inside your window only.</li><li>Not a certified collision-avoidance system.</li></ul></div>
+   <div class="card"><h3>Keyboard</h3><p>Tab and Shift+Tab move between controls; Enter or Space activates buttons and selectable table rows. Charts have tooltips on mouse hover; every plotted value also appears in a table.</p></div></div>`;
+}
+
+/* ---------- History + Priority Watch ---------- */
+function pwPriority(a){
+  return a.priority === "critical" ? `<span class="pw-tag critical">⛔ Critical</span>` : `<span class="pw-tag needs_attention">⚠ Needs Attention</span>`;
+}
+function pwStatus(a){
+  if(a.status === "reviewed_resolved") return `<span class="pw-tag reviewed_resolved">✓ Reviewed / Resolved</span>`;
+  if(a.status === "acknowledged") return `<span class="pw-status">◉ Acknowledged</span>`;
+  return `<span class="pw-status">● Open</span>`;
+}
+function pHistory(){
+  if (!S.backend) return `<h2>History</h2>${msgBox()}<div class="empty">History is stored by the backend (SQLite). Start the backend to see saved analyses.</div>`;
+  const alerts = S.priorityWatch || [];
+  return `<h2>History &amp; Priority Watch</h2><p class="lede">Saved analyses and a persistent review queue. Priority is a workflow label; it is not a collision probability. Restricted-data labels are shown separately and do not determine priority.</p>${msgBox()}
+  <section class="card" aria-labelledby="pw-title"><div class="pw-head"><div><h3 id="pw-title">◈ Priority Watch</h3><div class="small muted">${alerts.filter(a=>a.status!=='reviewed_resolved').length} open or acknowledged · ${alerts.filter(a=>a.status==='reviewed_resolved').length} reviewed/resolved</div></div><button class="btn" id="pw-refresh">Refresh alerts</button></div>
+  <div class="banner warn"><b>Use responsibly:</b> These are operator review records. OFDE does not calculate collision probability. Only enter reasons supported by your analysis or source data.</div>
+  <form id="pw-create-form" class="pw-form">
+    <div><label for="pw-analysis">Related saved analysis</label><select id="pw-analysis" name="analysis_id"><option value="">No linked analysis</option>${S.history.map(a=>`<option value="${a.id}">#${a.id} · ${esc(a.title)} · ${esc(a.object_a)} / ${esc(a.object_b)}</option>`).join("")}</select></div>
+    <div><label for="pw-priority">Priority</label><select id="pw-priority" name="priority"><option value="needs_attention">⚠ Needs Attention</option><option value="critical">⛔ Critical</option></select></div>
+    <div><label for="pw-restricted">Restricted-data label (separate)</label><select id="pw-restricted" name="restricted_label"><option value="none">None / not marked</option><option value="restricted">Restricted</option><option value="sensitive">Sensitive</option><option value="classified">Classified</option><option value="unknown">Unknown</option></select></div>
+    <div class="wide"><label for="pw-reason">Alert reason (required)</label><textarea id="pw-reason" name="reason" maxlength="1000" required placeholder="Describe the observed result or reason for manual review. Do not enter unsupported collision probabilities."></textarea></div>
+    <div><button class="btn primary" type="submit">＋ Add to Priority Watch</button></div>
+  </form>
+  ${alerts.length ? `<div class="pw-grid">${alerts.map(a=>`<article class="pw-alert ${a.status==='reviewed_resolved'?'reviewed_resolved':esc(a.priority)}"><div class="pw-head"><div>${pwPriority(a)} <span class="pw-label">Data: ${esc(a.restricted_label||'none')}</span></div>${pwStatus(a)}</div><div class="pw-reason">${esc(a.reason)}</div><div class="pw-meta"><span>Created: ${esc(a.created_utc)}</span><span>Updated: ${esc(a.updated_utc)}</span>${a.analysis_id ? `<span>Analysis #${a.analysis_id}</span>` : `<span>Unlinked alert</span>`}</div><div class="row" style="margin-top:10px">${a.status==='open'?`<button class="btn" data-pw-ack="${a.id}">Acknowledge</button>`:''}${a.status!=='reviewed_resolved'?`<button class="btn" data-pw-review="${a.id}">Mark reviewed / resolved</button>`:''}</div></article>`).join("")}</div>` : `<div class="empty" style="margin-top:12px">No Priority Watch alerts yet. Add a reason above to create a persistent review item.</div>`}</section>
+  <h3 style="margin-top:22px">Saved analysis history</h3><p class="small muted">Every successful analysis is saved in local SQLite. Use Open to inspect the full record and the export links to download it.</p>
+  <div class="card">${S.history.length ? `<div class="tablewrap"><table><thead><tr><th>#</th><th>Created (UTC)</th><th>Title</th><th>Objects</th><th class="num">Scenarios</th><th class="num">Baseline miss (km)</th><th>Baseline TCA (UTC)</th><th>Data</th><th>Open and export</th></tr></thead><tbody>
+    ${S.history.map(a => `<tr><td>${a.id}</td><td>${esc(a.created_utc)}</td><td>${esc(a.title)}</td><td>${esc(a.object_a)} / ${esc(a.object_b)}</td><td class="num">${a.n_scenarios}</td><td class="num">${fmt(a.baseline_miss_km,3)}</td><td>${esc(a.baseline_tca_utc)}</td><td>${originChip(a.origin)}</td>
+      <td><div class="row"><button class="btn" data-open="${a.id}">Open</button><a class="btn" href="${API}/api/analyses/${a.id}/report.html" target="_blank" rel="noopener">HTML</a><a class="btn" href="${API}/api/analyses/${a.id}/report.csv">CSV</a><a class="btn" href="${API}/api/analyses/${a.id}/export.json">JSON</a></div></td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No saved analyses yet. Run one on the Analyze page.</div>`}</div>`;
+}
+function wHistory(){
+  openAnalysisHandlers();
+  document.querySelectorAll("button[data-open]").forEach(b => { const go = guard(async () => { S.an = await api("/api/analyses/" + b.dataset.open); S.tab = "analyze"; await refreshDash(); }); b.onclick = go; });
+  const refresh = $("#pw-refresh"); if(refresh) refresh.onclick = guard(async()=>{ await loadHistory(); S.msg={kind:"ok",text:"Priority Watch refreshed."}; });
+  const form = $("#pw-create-form"); if(form) form.onsubmit = async ev => {
+    ev.preventDefault();
+    try {
+      S.msg = null;
+      const analysis = $("#pw-analysis").value;
+      await post("/api/priority-watch", {analysis_id:analysis || null, priority:$("#pw-priority").value, restricted_label:$("#pw-restricted").value, reason:$("#pw-reason").value});
+      await loadHistory(); S.msg={kind:"ok",text:"Priority Watch alert saved."};
+    } catch(e) { S.msg={kind:"err",text:e.message||String(e),code:e.code}; }
+    render();
+  };
+  document.querySelectorAll("button[data-pw-ack]").forEach(b=>{b.onclick=guard(async()=>{await post(`/api/priority-watch/${b.dataset.pwAck}/acknowledge`,{});await loadHistory();S.msg={kind:"ok",text:"Alert acknowledged."};});});
+  document.querySelectorAll("button[data-pw-review]").forEach(b=>{b.onclick=guard(async()=>{await post(`/api/priority-watch/${b.dataset.pwReview}/review`,{});await loadHistory();S.msg={kind:"ok",text:"Alert marked reviewed/resolved."};});});
+}
+
+/* ---------- Method and limits ---------- */
+function pMethod(){
+  const lim = S.defs?.limitations || ["Start the backend to load the full limitations list."];
+  return `<h2>Method and limits</h2><p class="lede">What the calculation does, what the metrics mean, and what cannot be concluded.</p>
+  <div class="grid g2" style="margin-bottom:14px">
+   <div class="card hero-card"><h3>Orbital calculation</h3><ul class="tight small">
+    <li>TLE validated (69 characters, line numbers, modulo-10 checksums, ranges); epoch parsed to UTC.</li>
+    <li>Both objects propagated with the <b>sgp4</b> package at identical UTC timestamps; output frame TEME, km and km/s.</li>
+    <li>Separation sampled on a uniform grid; each grid minimum is bracketed and refined by golden-section search to the stated tolerance.</li>
+    <li>The result is the closest approach <b>inside the analysed window</b>, not a proven global minimum. A minimum at the window edge is flagged.</li>
+    <li>Epoch difference between the two TLEs and TLE age relative to the window are reported and warned about.</li></ul></div>
+   <div class="card"><h3>Known limitations</h3><ul class="tight small">${lim.map(l=>`<li>${esc(l)}</li>`).join("")}</ul></div>
+   <div class="card"><h3>About this project</h3><p class="small" style="margin:0 0 6px"><b>OFDE: Orbital Future Decision Engine.</b> Team Fantastic 4: Anuj Singh (leader), Sarthak Gavnekar, Nitin Chherke, Chirag Lalwani. Nakshatra, Software track.</p>
+    <p class="small muted" style="margin:0">Concept: move from one predicted future to a transparent comparison of plausible outcomes. Every scenario lists exactly which input changed. Probabilistic uncertainty analysis is <b>not</b> implemented and no collision probability is calculated.</p></div>
+   <div class="card"><h3>Verification status</h3><p class="small" style="margin:0">${S.backend ? (S.backend.sgp4.available ? (S.backend.sgp4.verification.verified ? `SGP4 ${esc(S.backend.sgp4.version)} verified on this machine (${esc(S.backend.sgp4.verification.checked_utc)}).` : `SGP4 ${esc(S.backend.sgp4.version)} installed, <b>not verified</b>: run <span class="mono">python tools\\verify_sgp4.py</span>.`) : "SGP4 not installed: analysis unavailable.") : "Backend offline."}</p></div>
+  </div>
+  ${pMetrics()}<div style="margin-top:14px"></div>${pHelp()}`;
+}
+
+/* ============================ boot ============================ */
+document.querySelectorAll(".topbar nav button[data-tab]").forEach(b => b.onclick = async () => {
+  S.tab = b.dataset.tab; S.msg = null;
+  if (S.tab === "history" && S.backend) { try { await loadHistory(); } catch(e) { S.msg = {kind:"err", text:e.message}; } }
+  if (S.tab === "mission" && S.backend) { try { await refreshDash(); } catch(e) {} }
+  render(); $("#main").focus({preventScroll:true}); window.scrollTo(0,0);
+});
+drawStars(); let rs; addEventListener("resize", () => { clearTimeout(rs); rs = setTimeout(drawStars, 250); });
+init();
+
+</script>
+</body>
+</html>
